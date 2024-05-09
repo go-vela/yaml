@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-vela/yaml/v2"
 	. "gopkg.in/check.v1"
-	"gopkg.in/yaml.v2"
 )
 
 var unmarshalIntTest = 123
@@ -697,7 +697,7 @@ var unmarshalTests = []struct {
 		M{"a": 123456e1},
 	}, {
 		"a: 123456E1\n",
-		M{"a": 123456E1},
+		M{"a": 123456e1},
 	},
 	// yaml-test-suite 3GZX: Spec Example 7.1. Alias Nodes
 	{
@@ -870,14 +870,14 @@ var unmarshalErrorTests = []struct {
 	{"a:\n  1:\nb\n  2:", ".*could not find expected ':'"},
 	{
 		"a: &a [00,00,00,00,00,00,00,00,00]\n" +
-		"b: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a]\n" +
-		"c: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b]\n" +
-		"d: &d [*c,*c,*c,*c,*c,*c,*c,*c,*c]\n" +
-		"e: &e [*d,*d,*d,*d,*d,*d,*d,*d,*d]\n" +
-		"f: &f [*e,*e,*e,*e,*e,*e,*e,*e,*e]\n" +
-		"g: &g [*f,*f,*f,*f,*f,*f,*f,*f,*f]\n" +
-		"h: &h [*g,*g,*g,*g,*g,*g,*g,*g,*g]\n" +
-		"i: &i [*h,*h,*h,*h,*h,*h,*h,*h,*h]\n",
+			"b: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a]\n" +
+			"c: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b]\n" +
+			"d: &d [*c,*c,*c,*c,*c,*c,*c,*c,*c]\n" +
+			"e: &e [*d,*d,*d,*d,*d,*d,*d,*d,*d]\n" +
+			"f: &f [*e,*e,*e,*e,*e,*e,*e,*e,*e]\n" +
+			"g: &g [*f,*f,*f,*f,*f,*f,*f,*f,*f]\n" +
+			"h: &h [*g,*g,*g,*g,*g,*g,*g,*g,*g]\n" +
+			"i: &i [*h,*h,*h,*h,*h,*h,*h,*h,*h]\n",
 		"yaml: document contains excessive aliasing",
 	},
 }
@@ -1337,31 +1337,25 @@ func (s *S) TestFuzzCrashers(c *C) {
 	}
 }
 
-//var data []byte
-//func init() {
-//	var err error
-//	data, err = ioutil.ReadFile("/tmp/file.yaml")
-//	if err != nil {
-//		panic(err)
-//	}
-//}
-//
-//func (s *S) BenchmarkUnmarshal(c *C) {
-//	var err error
-//	for i := 0; i < c.N; i++ {
-//		var v map[string]interface{}
-//		err = yaml.Unmarshal(data, &v)
-//	}
-//	if err != nil {
-//		panic(err)
-//	}
-//}
-//
-//func (s *S) BenchmarkMarshal(c *C) {
-//	var v map[string]interface{}
-//	yaml.Unmarshal(data, &v)
-//	c.ResetTimer()
-//	for i := 0; i < c.N; i++ {
-//		yaml.Marshal(&v)
-//	}
-//}
+// It is interesting for users to have an alias to implement custom interface methods
+type TestCustomMapSlice yaml.MapSlice
+
+func (s *S) TestMergeCustomMapSlice(c *C) {
+	container := TestCustomMapSlice{}
+	err := yaml.Unmarshal([]byte(mergeTests), &container)
+	c.Check(err, IsNil)
+
+	var want = TestCustomMapSlice{
+		yaml.MapItem{Key: "x", Value: 1},
+		yaml.MapItem{Key: "y", Value: 2},
+		yaml.MapItem{Key: "r", Value: 10},
+		yaml.MapItem{Key: "label", Value: "center/big"},
+	}
+
+	for _, test := range container {
+		if test.Key == "anchors" {
+			continue
+		}
+		c.Assert(test.Value, DeepEquals, want, Commentf("test %q failed", test))
+	}
+}
