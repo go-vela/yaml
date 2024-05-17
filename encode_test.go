@@ -11,8 +11,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/go-vela/yaml"
 	. "gopkg.in/check.v1"
-	"gopkg.in/yaml.v2"
 )
 
 var marshalIntTest = 123
