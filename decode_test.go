@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-vela/yaml"
 	. "gopkg.in/check.v1"
-	"gopkg.in/yaml.v2"
 )
 
 var unmarshalIntTest = 123
@@ -1240,6 +1240,29 @@ type textUnmarshaler struct {
 func (t *textUnmarshaler) UnmarshalText(s []byte) error {
 	t.S = string(s)
 	return nil
+}
+
+// It is interesting for users to have an alias to implement custom interface methods
+type TestCustomMapSlice yaml.MapSlice
+
+func (s *S) TestMergeCustomMapSlice(c *C) {
+	container := TestCustomMapSlice{}
+	err := yaml.Unmarshal([]byte(mergeTests), &container)
+	c.Check(err, IsNil)
+
+	var want = TestCustomMapSlice{
+		yaml.MapItem{Key: "x", Value: 1},
+		yaml.MapItem{Key: "y", Value: 2},
+		yaml.MapItem{Key: "r", Value: 10},
+		yaml.MapItem{Key: "label", Value: "center/big"},
+	}
+
+	for _, test := range container {
+		if test.Key == "anchors" {
+			continue
+		}
+		c.Assert(test.Value, DeepEquals, want, Commentf("test %q failed", test))
+	}
 }
 
 //var data []byte
